@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>축제 POS 시스템</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
+      background: #f5f5f5;
+      color: #222;
+    }
+
+    /* 상단 바 */
+    .topbar {
+      width: 100%;
+      padding: 12px 20px;
+      background: #ffffff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .topbar-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+
+    .topbar-btns button {
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      margin-left: 8px;
+      font-size: 0.95rem;
+    }
+
+    .btn-start { background: #007bff; color: #fff; }
+    .btn-stop { background: #dc3545; color: #fff; }
+
+    /* 3:7 레이아웃 */
+    .layout {
+      display: flex;
+      height: calc(100vh - 60px);
+    }
+
+    .left {
+      width: 32%;
+      background: #ffffff;
+      border-right: 1px solid #ddd;
+      overflow-y: auto;
+      padding: 12px;
+    }
+
+    .right {
+      width: 68%;
+      padding: 16px;
+      overflow-y: auto;
+    }
+
+    /* 주문 카드 */
+    .order-card {
+      background: #f9f9f9;
+      border-radius: 12px;
+      padding: 12px 14px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      margin-bottom: 12px;
+    }
+
+    .order-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .order-items {
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+    }
+
+    .order-total {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .btn-done {
+      background: #28a745;
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    /* 메뉴 제목 */
+    .menu-group-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin: 16px 0 8px;
+    }
+
+    /* 메뉴 카드 3열 */
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .menu-btn {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      cursor: pointer;
+      text-align: center;
+      border: 1px solid #ddd;
+      transition: 0.15s;
+      font-size: 0.95rem;
+      user-select: none;
+    }
+
+    .menu-btn:hover {
+      background: #f0f4ff;
+      transform: translateY(-2px);
+    }
+
+    .menu-name { font-weight: 600; margin-bottom: 4px; }
+    .menu-price { color: #555; font-size: 0.9rem; }
+
+    /* 현재 주문 */
+    .current-order-box {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 14px;
+      margin-top: 18px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .order-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .qty-btn {
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid #666;
+      cursor: pointer;
+      background: #fff;
+      margin: 0 4px;
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      background: #007bff;
+      color: #fff;
+      font-size: 1.1rem;
+      margin-top: 12px;
+    }
+
+    /* 매출 요약 팝업 */
+    .modal-bg {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.4);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 20;
+    }
+
+    .modal {
+      width: 85%;
+      max-width: 450px;
+      background: #fff;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+
+    .modal-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .modal-btn {
+      margin-top: 16px;
+      width: 100%;
+      padding: 10px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 12px;
+      background: #007bff;
+      color: #fff;
+      cursor: pointer;
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <!-- 상단바 -->
+  <div class="topbar">
+    <div class="topbar-title">축제 POS 시스템</div>
+    <div class="topbar-btns">
+      <button class="btn-start" id="btnStart">장사 시작</button>
+      <button class="btn-stop" id="btnStop">장사 종료</button>
+    </div>
+  </div>
+
+  <div class="layout">
+
+    <!-- 🟦 왼쪽 주문 목록 -->
+    <div class="left" id="leftOrders"></div>
+
+    <!-- 🟧 오른쪽 주문 입력 -->
+    <div class="right">
+
+      <!-- 메뉴 그룹: 불닭컵+토핑 -->
+      <div class="menu-group-title">불닭컵 & 토핑</div>
+      <div class="menu-grid" id="menuGroup1"></div>
+
+      <!-- 메뉴 그룹: 음료 -->
+      <div class="menu-group-title">음료</div>
+      <div class="menu-grid" id="menuGroup2"></div>
+
+      <!-- 기타 메뉴 -->
+      <div class="menu-group-title">기타</div>
+      <div class="menu-grid" id="menuGroup3"></div>
+
+      <!-- 현재 주문 -->
+      <div class="current-order-box">
+        <div style="font-weight:700; margin-bottom:10px;">
+          현재 주문 (주문번호 <span id="currentOrderNo">1</span>번)
+        </div>
+        <div id="currentOrderList"></div>
+
+        <div style="margin-top:10px; font-size:1.1rem; font-weight:700;">
+          총 금액: <span id="currentTotal">0</span>원
+        </div>
+
+        <button class="btn-submit" id="btnSubmitOrder">주문 등록</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 매출 요약 모달 -->
+  <div class="modal-bg" id="modalBg">
+    <div class="modal">
+      <div class="modal-title">오늘 매출 요약</div>
+      <div id="salesSummary"></div>
+      <button class="modal-btn" id="btnModalClose">확인</button>
+    </div>
+  </div>
+
+<script>
+/* ==========================================================
+      0) 데이터 구조
+========================================================== */
+
+const menuGroup1 = [
+  {name:"불닭 컵", price:1500},
+  {name:"불닭 까르보 컵", price:1500},
+  {name:"치즈", price:500},
+  {name:"핫바", price:500},
+  {name:"콘", price:500},
+  {name:"마요네즈", price:500},
+];
+
+const menuGroup2 = [
+  {name:"콜라", price:1000},
+  {name:"사이다", price:1000},
+  {name:"쿨피스 복숭아", price:1000},
+  {name:"쿨피스 파인애플", price:1000},
+];
+
+const menuGroup3 = [
+  {name:"무학시그널 여고소개팅", price:500},
+  {name:"퍼스널컬러", price:1000},
+];
+
+/* ==========================================================
+      1) 상태 저장 (localStorage)
+========================================================== */
+
+let state = {
+  isActive: false,
+  sessionClosed: false,
+  currentOrderNumber: 1,
+  currentOrder: {},       // {메뉴명: {price, qty}}
+  activeOrders: [],       // 왼쪽 리스트에 표시할 주문들
+  totalSales: 0,
+  totalOrders: 0,
+  salesByMenu: {}         // {메뉴명: {qty, revenue}}
+};
+
+function saveState() {
+  localStorage.setItem("festivalPOS", JSON.stringify(state));
+}
+
+function loadState() {
+  const saved = localStorage.getItem("festivalPOS");
+  if (saved) {
+    state = JSON.parse(saved);
+  }
+}
+
+/* ==========================================================
+      2) 초기 실행
+========================================================== */
+
+loadState();
+updateUI();
+
+renderMenu("menuGroup1", menuGroup1);
+renderMenu("menuGroup2", menuGroup2);
+renderMenu("menuGroup3", menuGroup3);
+
+function updateUI() {
+  document.getElementById("currentOrderNo").innerText = state.currentOrderNumber;
+  renderCurrentOrder();
+  renderLeftOrders();
+}
+
+/* ==========================================================
+      3) 메뉴 생성
+========================================================== */
+
+function renderMenu(containerId, items) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = "";
+  items.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "menu-btn";
+    div.innerHTML = `
+      <div class="menu-name">${item.name}</div>
+      <div class="menu-price">${item.price}원</div>
+    `;
+    div.onclick = () => addToCurrent(item.name, item.price);
+    container.appendChild(div);
+  });
+}
+
+/* ==========================================================
+      4) 현재 주문 관리
+========================================================== */
+
+function addToCurrent(name, price) {
+  if (!state.currentOrder[name]) {
+    state.currentOrder[name] = {price, qty:1};
+  } else {
+    state.currentOrder[name].qty++;
+  }
+  saveState();
+  renderCurrentOrder();
+}
+
+function changeQty(name, delta) {
+  state.currentOrder[name].qty += delta;
+  if (state.currentOrder[name].qty <= 0) {
+    delete state.currentOrder[name];
+  }
+  saveState();
+  renderCurrentOrder();
+}
+
+function renderCurrentOrder() {
+  const list = document.getElementById("currentOrderList");
+  list.innerHTML = "";
+
+  let total = 0;
+
+  const entries = Object.entries(state.currentOrder);
+
+  entries.forEach(([name, item]) => {
+    total += item.qty * item.price;
+
+    const row = document.createElement("div");
+    row.className = "order-row";
+    row.innerHTML = `
+      <div>${name} (${item.price}원)</div>
+      <div>
+        <button class="qty-btn" onclick="changeQty('${name}', -1)">-</button>
+        ${item.qty}
+        <button class="qty-btn" onclick="changeQty('${name}', 1)">+</button>
+      </div>
+    `;
+    list.appendChild(row);
+  });
+
+  document.getElementById("currentTotal").innerText = total;
+}
+
+/* ==========================================================
+      5) 주문 등록 → 왼쪽 리스트로 이동
+========================================================== */
+
+document.getElementById("btnSubmitOrder").onclick = submitOrder;
+
+function submitOrder() {
+  if (!state.isActive) {
+    alert("장사를 시작해주세요.");
+    return;
+  }
+  const entries = Object.entries(state.currentOrder);
+  if (entries.length === 0) {
+    alert("주문할 메뉴가 없습니다.");
+    return;
+  }
+
+  // 총 금액 계산
+  let total = 0;
+  entries.forEach(([name, item]) => {
+    total += item.price * item.qty;
+  });
+
+  // 주문 객체 생성
+  const order = {
+    orderNumber: state.currentOrderNumber,
+    items: state.currentOrder,
+    total
+  };
+
+  // 왼쪽 리스트에 추가
+  state.activeOrders.push(order);
+
+  // 매출 집계
+  state.totalSales += total;
+  state.totalOrders++;
+
+  entries.forEach(([name, item]) => {
+    if (!state.salesByMenu[name]) {
+      state.salesByMenu[name] = {qty:0, revenue:0};
+    }
+    state.salesByMenu[name].qty += item.qty;
+    state.salesByMenu[name].revenue += item.qty * item.price;
+  });
+
+  // 다음 주문 준비
+  state.currentOrderNumber++;
+  state.currentOrder = {};
+
+  saveState();
+  updateUI();
+}
+
+/* ==========================================================
+      6) 왼쪽 주문 목록 + 준비완료
+========================================================== */
+
+function renderLeftOrders() {
+  const container = document.getElementById("leftOrders");
+  container.innerHTML = "";
+
+  state.activeOrders.forEach(order => {
+    const div = document.createElement("div");
+    div.className = "order-card";
+
+    // 메뉴 문자열 구성
+    const itemText = Object.entries(order.items)
+      .map(([name, item]) => `${name} ${item.qty}개`)
+      .join(", ");
+
+    div.innerHTML = `
+      <div class="order-title">주문번호 ${order.orderNumber}번</div>
+      <div class="order-items">${itemText}</div>
+      <div class="order-total">총 ${order.total}원</div>
+      <button class="btn-done" onclick="finishOrder(${order.orderNumber})">
+        준비완료
+      </button>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function finishOrder(orderNumber) {
+  state.activeOrders = state.activeOrders.filter(o => o.orderNumber !== orderNumber);
+  saveState();
+  renderLeftOrders();
+}
+
+/* ==========================================================
+      7) 장사 시작 / 종료
+========================================================== */
+
+document.getElementById("btnStart").onclick = () => {
+  // 새 날 시작
+  state.isActive = true;
+  state.sessionClosed = false;
+  state.currentOrderNumber = 1;
+  state.activeOrders = [];
+  state.currentOrder = {};
+  state.totalSales = 0;
+  state.totalOrders = 0;
+  state.salesByMenu = {};
+  saveState();
+  updateUI();
+};
+
+document.getElementById("btnStop").onclick = () => {
+  if (!state.isActive) return;
+  state.isActive = false;
+  state.sessionClosed = true;
+  saveState();
+  showSalesSummary();
+};
+
+/* ==========================================================
+      8) 매출 요약 모달
+========================================================== */
+
+function showSalesSummary() {
+  const summary = document.getElementById("salesSummary");
+
+  let html = `
+    <div>총 주문 건수: ${state.totalOrders}</div>
+    <div>총 매출액: ${state.totalSales}원</div>
+    <br>
+    <div><b>메뉴별 판매 요약</b></div>
+  `;
+
+  Object.entries(state.salesByMenu).forEach(([name, data]) => {
+    html += `
+      <div>- ${name}: ${data.qty}개 (${data.revenue}원)</div>
+    `;
+  });
+
+  summary.innerHTML = html;
+  document.getElementById("modalBg").style.display = "flex";
+}
+
+document.getElementById("btnModalClose").onclick = () => {
+  document.getElementById("modalBg").style.display = "none";
+};
+
+</script>
+</body>
+</html>
